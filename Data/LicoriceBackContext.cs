@@ -18,6 +18,6 @@ namespace LicoriceBack.Data
 
         public DbSet<LicoriceBack.Models.Cube> Cubes { get; set; } = default!;
 
-        public DbSet<LicoriceBack.Models.Card> Cars { get; set; } = default!;
+        public DbSet<LicoriceBack.Models.Card> Cards { get; set; } = default!;
     }
 }

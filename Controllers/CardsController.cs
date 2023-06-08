@@ -25,22 +25,22 @@ namespace LicoriceBack.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Card>>> GetCard()
         {
-          if (_context.Cars == null)
+          if (_context.Cards == null)
           {
               return NotFound();
           }
-            return await _context.Cars.ToListAsync();
+            return await _context.Cards.ToListAsync();
         }
 
         // GET: api/Cards/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Card>> GetCard(int id)
         {
-          if (_context.Cars == null)
+          if (_context.Cards == null)
           {
               return NotFound();
           }
-            var card = await _context.Cars.FindAsync(id);
+            var card = await _context.Cards.FindAsync(id);
 
             if (card == null)
             {
@@ -86,11 +86,11 @@ namespace LicoriceBack.Controllers
         [HttpPost]
         public async Task<ActionResult<Card>> PostCard(Card card)
         {
-          if (_context.Cars == null)
+          if (_context.Cards == null)
           {
               return Problem("Entity set 'LicoriceBackContext.Cards'  is null.");
           }
-            _context.Cars.Add(card);
+            _context.Cards.Add(card);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetCard", new { id = card.Id }, card);
@@ -100,17 +100,17 @@ namespace LicoriceBack.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCard(int id)
         {
-            if (_context.Cars == null)
+            if (_context.Cards == null)
             {
                 return NotFound();
             }
-            var card = await _context.Cars.FindAsync(id);
+            var card = await _context.Cards.FindAsync(id);
             if (card == null)
             {
                 return NotFound();
             }
 
-            _context.Cars.Remove(card);
+            _context.Cards.Remove(card);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -118,7 +118,7 @@ namespace LicoriceBack.Controllers
 
         private bool CardExists(int id)
         {
-            return (_context.Cars?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Cards?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
