@@ -2,6 +2,7 @@
 {
     public class WallDetailsDto
     {
+        public string? Title { get; set; }
         public string? Key { get; set; }
         public string? Descriptions { get; set; }
 

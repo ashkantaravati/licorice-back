@@ -7,6 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LicoriceBack.Data;
 using LicoriceBack.Models;
+using LicoriceBack.Contracts;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using LicoriceBack.Utils;
 
 namespace LicoriceBack.Controllers
 {
@@ -21,104 +26,73 @@ namespace LicoriceBack.Controllers
             _context = context;
         }
 
-        // GET: api/Cube
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cube>>> GetCube()
-        {
-          if (_context.Cubes == null)
-          {
-              return NotFound();
-          }
-            return await _context.Cubes.ToListAsync();
-        }
 
-        // GET: api/Cube/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Cube>> GetCube(int id)
-        {
-          if (_context.Cubes == null)
-          {
-              return NotFound();
-          }
-            var cube = await _context.Cubes.FindAsync(id);
-
-            if (cube == null)
-            {
-                return NotFound();
-            }
-
-            return cube;
-        }
-
-        // PUT: api/Cube/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCube(int id, Cube cube)
-        {
-            if (id != cube.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(cube).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CubeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Cube
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Cube>> PostCube(Cube cube)
+        public async Task<ActionResult<Cube>> PostCube(CubeCreationDto dto)
         {
           if (_context.Cubes == null)
           {
               return Problem("Entity set 'LicoriceBackContext.Cubes'  is null.");
           }
+
+            var wall = await _context.Walls.FirstOrDefaultAsync(wall => wall.Key == dto.WallKey);
+            if(wall == null)
+            {
+                return BadRequest("Wall does not exist");
+            }
+            if(dto.Passphrase!= dto.PassphraseConfirmation)
+            {
+                return BadRequest("Passphrase and Passphrase Repeat do not match!");
+            }
+            byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
+            var passphraseHash = BCrypt.Net.BCrypt.HashPassword(dto.Passphrase);
+            Cube cube = new Cube
+            {
+                Key=UniqueKeyUtils.GenerateUniqueKey("B"),
+                CreatedAt = DateTime.Now,
+                Name = dto.Name,
+                Wall = wall,
+                PassphraseHash = passphraseHash
+
+            };
             _context.Cubes.Add(cube);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCube", new { id = cube.Id }, cube);
+            return CreatedAtAction("GetCube", new { key = cube.Key }, cube);
         }
-
-        // DELETE: api/Cube/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCube(int id)
+        [HttpPost("unlock")]
+        public async Task<ActionResult<CubeDetailsDto>> UnlockCube(CubeUnlockDto dto)
         {
             if (_context.Cubes == null)
             {
                 return NotFound();
             }
-            var cube = await _context.Cubes.FindAsync(id);
+            var cube = await _context.Cubes.Include(c => c.Cards).FirstOrDefaultAsync(c => c.Key == dto.Key);
+
             if (cube == null)
             {
-                return NotFound();
+                return BadRequest("Specified Cube Does Not Exist!");
             }
 
-            _context.Cubes.Remove(cube);
-            await _context.SaveChangesAsync();
+            bool verified = BCrypt.Net.BCrypt.Verify(dto.Passphrase, cube.PassphraseHash);
 
-            return NoContent();
+            if (verified)
+            {
+                var response = new CubeDetailsDto
+                {
+                    Name = cube.Name,
+                    Key = cube.Key,
+                    Cards = cube.Cards.Select(c => new CardOverviewDto
+                    {
+                        Content = c.Content,
+                        CreatedAt = c.CreatedAt
+                    }).ToList()
+                };
+                return response;
+            }
+
+            return Unauthorized("Invalid Passphrase");
         }
 
-        private bool CubeExists(int id)
-        {
-            return (_context.Cubes?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
     }
 }

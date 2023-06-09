@@ -16,6 +16,6 @@ namespace LicoriceBack.Models
 
         public IEnumerable<Cube>? Cubes { get; set; }
 
-        public DateTime CreateAt { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

@@ -5,6 +5,7 @@ namespace LicoriceBack.Models
     public class Cube
     {
         public int Id { get; set; }
+        public string? Key { get; set; }
         public string? Name { get; set; }
 
         public Wall? Wall { get; set; }
@@ -13,6 +14,6 @@ namespace LicoriceBack.Models
         [JsonIgnore]
         public string? PassphraseHash { get; set; }
 
-        public DateTime CreateAt { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

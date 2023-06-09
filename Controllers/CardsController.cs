@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LicoriceBack.Data;
 using LicoriceBack.Models;
+using LicoriceBack.Contracts;
 
 namespace LicoriceBack.Controllers
 {
@@ -21,104 +22,28 @@ namespace LicoriceBack.Controllers
             _context = context;
         }
 
-        // GET: api/Cards
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Card>>> GetCard()
-        {
-          if (_context.Cards == null)
-          {
-              return NotFound();
-          }
-            return await _context.Cards.ToListAsync();
-        }
-
-        // GET: api/Cards/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Card>> GetCard(int id)
-        {
-          if (_context.Cards == null)
-          {
-              return NotFound();
-          }
-            var card = await _context.Cards.FindAsync(id);
-
-            if (card == null)
-            {
-                return NotFound();
-            }
-
-            return card;
-        }
-
-        // PUT: api/Cards/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCard(int id, Card card)
-        {
-            if (id != card.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(card).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CardExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Cards
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Card>> PostCard(Card card)
-        {
-          if (_context.Cards == null)
-          {
-              return Problem("Entity set 'LicoriceBackContext.Cards'  is null.");
-          }
-            _context.Cards.Add(card);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCard", new { id = card.Id }, card);
-        }
-
-        // DELETE: api/Cards/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCard(int id)
+        public async Task<ActionResult<Card>> PostCard(CardCreationDto dto)
         {
             if (_context.Cards == null)
             {
-                return NotFound();
+                return Problem("Entity set 'LicoriceBackContext.Cards'  is null.");
             }
-            var card = await _context.Cards.FindAsync(id);
-            if (card == null)
+            var cube = await _context.Cubes.FirstOrDefaultAsync(cube => cube.Key == dto.CubeKey);
+            if (cube == null)
+            { return BadRequest("No cube with specified key exists"); }
+            var card = new Card
             {
-                return NotFound();
-            }
+                Content = dto.Content,
+                Cube = cube,
+                CreatedAt = DateTime.Now
 
-            _context.Cards.Remove(card);
+            };
+            _context.Cards.Add(card);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return CreatedAtAction("PostCard", dto);
         }
 
-        private bool CardExists(int id)
-        {
-            return (_context.Cards?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
     }
 }

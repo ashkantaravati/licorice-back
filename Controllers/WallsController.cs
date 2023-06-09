@@ -25,14 +25,19 @@ namespace LicoriceBack.Controllers
 
         // GET: api/Walls
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<WallOverviewDto>>> GetWall()
+        public async Task<ActionResult<IEnumerable<WallOverviewDto>>> GetWall([FromQuery] bool? includePrivate = false)
         {
-          if (_context.Walls == null)
-          {
-              return NotFound();
-          }
+            if (_context.Walls == null)
+            {
+                return NotFound();
+            }
 
-            var walls = await _context.Walls.Include(g => g.Cubes).Select(w => new WallOverviewDto
+            var source = _context.Walls.Include(g => g.Cubes);
+
+            var query = includePrivate.Value == true ? source : source.Where(w => w.IsPublic == true);
+
+
+            var walls = await query.Select(w => new WallOverviewDto
             {
                 Title = w.Title,
                 Creator = w.Creator,
@@ -48,37 +53,44 @@ namespace LicoriceBack.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<WallDetailsDto>> GetWall(string id)
         {
-          if (_context.Walls == null)
-          {
-              return NotFound();
-          }
-            var wall = await _context.Walls.Include(w => w.Cubes).Select(w => new WallDetailsDto
+            if (_context.Walls == null)
             {
-                Descriptions = w.Descriptions,
-                Key = w.Key,
-                Creator = w.Creator,
-                Cubes = w.Cubes.Select(c => new CubeOverviewDto { 
-                Key=c.Id.ToString(),
-                Name=c.Name,
-                CardCount=c.Cards.Count()
-                }).ToList(),
-                CubeCount = w.Cubes.Count()
-            }).FirstOrDefaultAsync(w => w.Key == id);
+                return NotFound();
+            }
+            var wall = await _context.Walls.Include(w => w.Cubes).FirstOrDefaultAsync(w => w.Key == id);
 
             if (wall == null)
             {
                 return NotFound();
             }
-            return wall;
+            var wallCubes = await _context.Cubes.Include(w => w.Cards).Where(c=>c.Wall==wall).ToListAsync();
+            var dto = new WallDetailsDto
+            {
+                Descriptions = wall.Descriptions,
+                Title = wall.Title,
+
+                Key = wall.Key,
+                Creator = wall.Creator,
+                Cubes = wallCubes.Select(c => new CubeOverviewDto
+                {
+                    Key = c.Key,
+                    Name = c.Name,
+                    WallKey = wall.Key,
+                    CardCount = c.Cards.Count()
+                }).ToList(),
+                CubeCount = wallCubes.Count
+            };
+
+            return dto;
         }
 
         [HttpPost]
         public async Task<ActionResult<Wall>> PostWall(CreateWallDto dto)
         {
-          if (_context.Walls == null)
-          {
-              return Problem("Entity set 'LicoriceBackContext.Walls'  is null.");
-          }
+            if (_context.Walls == null)
+            {
+                return Problem("Entity set 'LicoriceBackContext.Walls'  is null.");
+            }
 
             var wall = new Wall
             {
@@ -86,7 +98,7 @@ namespace LicoriceBack.Controllers
                 Creator = dto.Creator,
                 IsPublic = dto.IsPublic,
                 Descriptions = dto.Descriptions,
-                CreateAt = DateTime.Now,
+                CreatedAt = DateTime.Now,
                 Key = UniqueKeyUtils.GenerateUniqueKey()
 
             };

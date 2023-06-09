@@ -9,13 +9,26 @@ namespace LicoriceBack.Utils
     {
         internal static readonly char[] chars =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".ToCharArray();
-        public static string GenerateUniqueKey()
+        public static string GenerateUniqueKey(string type="A")
         {
-            string first3 = GenerateRandomAlphanumericString(3);
-            string second5 = GenerateRandomAlphanumericString(5);
-            string third2 = GenerateRandomAlphanumericString(2);
+            if (type == "A")
+            {
+                string first3 = GenerateRandomAlphanumericString(3);
+                string second5 = GenerateRandomAlphanumericString(5);
+                string third2 = GenerateRandomAlphanumericString(2);
 
-            return $"{first3}-{second5}-{third2}";
+                return $"{first3}-{second5}-{third2}";
+            }
+
+            else if (type == "B")
+            {
+                string first5 = GenerateRandomAlphanumericString(5);
+                string second5 = GenerateRandomAlphanumericString(5);
+                return $"{first5}-{second5}";
+            }
+            else
+                throw new Exception("type is invalid");
+
         }
 
         public static string GenerateRandomAlphanumericString(int length)

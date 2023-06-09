@@ -1,10 +1,10 @@
 ﻿namespace LicoriceBack.Contracts
 {
-    public class CubeOverviewDto
+    public class CubeDetailsDto
     {
         public string? Key { get; set; }
         public string? Name { get; set; }
-        public int CardCount { get; set; }
-        public string? WallKey { get; set; }
+        public List<CardOverviewDto>? Cards { get; set; }
+
     }
 }
